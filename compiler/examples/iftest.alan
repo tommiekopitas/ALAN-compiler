@@ -1,0 +1,8 @@
+main () : proc
+
+
+    {
+        if (true) writeInteger(1);
+        else writeInteger(2);
+        writeInteger(3);
+    }

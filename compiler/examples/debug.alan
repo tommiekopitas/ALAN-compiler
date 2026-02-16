@@ -1,0 +1,6 @@
+main () : proc
+
+    i : int;
+    {
+        writeString("PLSPLS PLS\nal;skdjfaslj;kfj\n");
+    }

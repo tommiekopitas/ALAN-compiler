@@ -1,0 +1,15 @@
+main () : proc
+    a : int;
+    b : int;
+    {
+        writeString("Give me the 2 numbers:\n");
+        a = readInteger();
+        b = readInteger();
+        if (a < 0) a = -a;
+        if (b < 0) b = -b;
+        while (a != 0 & b != 0){
+            if (a > b) a = a % b;
+            else b = b % a;
+        }
+        writeInteger(a + b);
+    }

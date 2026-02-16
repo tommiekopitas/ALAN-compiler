@@ -1,0 +1,32 @@
+main () : proc 
+    gcd (a : int, b : int) : int 
+    {
+        if (a == 0 | b == 0) return a + b;
+        if (a > b) return gcd (a % b, b);
+        else return gcd (a, b % a);
+    }
+
+    abs (n : int) : int
+    {
+        if (n < 0) return -n;
+        return n;
+    }
+
+    a : int;
+    b : int;
+    result: int;
+
+    { -- main
+        writeString("Calculate GCD of 2 numbers:\na: ");
+        a = readInteger();
+        writeString("b: ");
+        b = readInteger();
+        result = gcd(abs(a),abs(b));
+        writeString("The gcd of ");
+        writeInteger(a);
+        writeString(" and ");
+        writeInteger(b);
+        writeString(" is ");
+        writeInteger(result);
+        writeString(".\n");
+    }

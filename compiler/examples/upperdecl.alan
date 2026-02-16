@@ -1,0 +1,22 @@
+main (): proc
+
+    main1 () : proc 
+
+        x: int;
+
+        abs () : int
+        {
+            x = 1;
+        }
+
+        { -- main1
+            x = 0;
+            writeInteger(x);
+            abs();
+            writeInteger(x);
+        }
+
+{
+    
+    main1();
+}

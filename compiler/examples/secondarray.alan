@@ -1,0 +1,10 @@
+main() : proc
+
+    x    : int [16];
+
+{ -- main
+    x[0] = 12;
+    x[1] = 13;
+    x[2] = x[0] + x[1];
+    writeInteger(x[2]);
+} -- main

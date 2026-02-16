@@ -1,0 +1,27 @@
+main () : proc
+    old : int;
+    new : int;
+    i : int;
+    n : int;
+    {
+        n = readInteger();
+        if (n >= 1) {
+            writeInteger(1);
+            writeString("\n");
+        }
+        if (n >= 2){ 
+            writeInteger(1);
+            writeString("\n");
+        }
+        new = 1;
+        old = 1;
+        i = 3;
+        while (i <= n){
+            new = new + old;
+            old = new - old;
+            writeInteger(new);
+            writeString("\n");
+            i = i + 1;
+        }
+
+    }

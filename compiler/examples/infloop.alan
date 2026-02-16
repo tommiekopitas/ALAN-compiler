@@ -1,0 +1,7 @@
+main () : proc
+    {
+        while(true) {
+            writeString("Get your paper up!\n");
+        }   
+    }
+    

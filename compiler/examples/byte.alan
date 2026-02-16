@@ -1,0 +1,25 @@
+main () : proc
+    disp (times: int, character: byte) : proc
+    {
+        while (times > 0){
+            writeChar(character);
+            times = times - 1;
+        }   
+    }
+    character: byte;
+    i : int;
+    {
+        character = '*';
+        i = 1;
+        while (i < 5){
+            disp((7-i)/2,' ');
+            disp(i,character);
+            disp((7-i)/2,' ');
+            i = i + i;
+            writeChar('\n');
+        }
+        disp(3,' ');
+        writeChar('|');
+        disp(3,' ');
+        writeChar('\n');
+    }

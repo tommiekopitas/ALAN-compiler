@@ -1,0 +1,176 @@
+#!/bin/bash
+
+
+# Default values for flags and options
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+OPT_BOOL=false
+IR_BOOL=false
+ASM_BOOL=false
+STDIN_BOOL=false
+TEMP_BOOL=false 
+
+# Parse the command-line options
+while getopts ":Oif" opt; do
+    if [ "$opt" = "O" ]; then
+        OPT_BOOL=true
+    elif [ "$opt" = "i" ]; then
+        if [ "$ASM_BOOL" = true ]; then
+            echo "Error: -i and -f cannot be used together."
+            usage
+            exit 1
+        fi
+        IR_BOOL=true
+        STDIN_BOOL=true
+    elif [ "$opt" = "f" ]; then
+        if [ "$IR_BOOL" = true ]; then
+            echo "Error: -i and -f cannot be used together."
+            usage
+            exit 1
+        fi
+        ASM_BOOL=true
+        STDIN_BOOL=true
+    else
+        echo "Error: Invalid option provided."
+        echo "Usage: $0 [-O] [-i | -f] [-o <executable>] [<source-file>]"
+        echo "The valid options are: "
+        echo "-O to optimize, -i for IR to stdout, -f for assembly to stdout"
+        exit 1
+    fi
+done
+
+shift $((OPTIND -1))
+
+# Ensure the presence of exactly one source file or read from stdin
+if [ $# -eq 0 ]; then
+    if [ "$STDIN_BOOL" = false ]; then
+        echo "Error: No input provided. A source file or stdin input is required."
+        echo "Usage: $0 [-O] [-i | -f] [-o <executable>] [<source-file>]"
+        echo "The valid options are: "
+        echo "-O to optimize, -i for IR to stdout, -f for assembly to stdout"
+        exit 1
+    fi
+elif [ $# -eq 1 ]; then
+    if [ -f "$1" ]; then
+        SRC_FILE="$1"
+    else
+        echo "Error: Source file '$1' not found."
+        echo "Usage: $0 [-O] [-i | -f] [-o <executable>] [<source-file>]"
+        echo "The valid options are: "
+        echo "-O to optimize, -i for IR to stdout, -f for assembly to stdout"
+        exit 1
+    fi
+else
+    echo "Error: Too many arguments provided."
+    echo "Usage: $0 [-O] [-i | -f] [-o <executable>] [<source-file>]"
+    echo "The valid options are: "
+    echo "-O to optimize, -i for IR to stdout, -f for assembly to stdout"
+    exit 1
+fi
+
+# If using stdin, read into a temporary file
+if $STDIN_BOOL; then
+    SRC_FILE=$(mktemp /tmp/TEMP_FILE.XXXXXX)
+    TEMP_BOOL=true  
+    cat > "$SRC_FILE"
+fi
+
+# Determine the output file paths based on the source file location
+BASENAME=$(basename "$SRC_FILE" .alan)
+DIRNAME=$(dirname "$SRC_FILE")
+IMM_FILE="$BASENAME.imm"
+ASM_FILE="$BASENAME.asm"
+
+# Compile the Alan source file into LLVM IR, pass the optimize flag
+if $OPT_BOOL; then
+    "$SCRIPT_DIR/src/compiler_executable" -O < "$SRC_FILE" > "$IMM_FILE"
+else
+    "$SCRIPT_DIR/src/compiler_executable" < "$SRC_FILE" > "$IMM_FILE"
+fi
+compiler_status=$?
+
+# Check if the compiler succeeded
+if [ $compiler_status -ne 0 ]; then
+    echo "Compilation failed on code generation."
+    if  [ $TEMP_BOOL = true ]; then
+        rm -f "$SRC_FILE"
+    fi
+    rm -f "$IMM_FILE"
+    exit $compiler_status
+fi
+
+
+# If intermediate (LLVM IR) output is requested, print and exit
+if $IR_BOOL; then
+    cat "$IMM_FILE"
+    rm -f "$IMM_FILE"
+    if [ $TEMP_BOOL = true ]; then 
+        rm -f "$SRC_FILE"
+    fi
+    exit 0
+fi
+
+# Compile LLVM IR to assembly
+llc  -o "$ASM_FILE" "$IMM_FILE"
+
+llc_status=$?
+
+# Check if llc succeeded
+if [ $llc_status -ne 0 ]; then
+    echo "LLVM compilation failed."
+    if [ $TEMP_BOOL = true ]; then 
+        rm -f "$SRC_FILE"
+    fi
+    rm -f "$IMM_FILE"
+    exit $llc_status
+fi
+
+# If final assembly output is requested, print and exit
+if $ASM_BOOL; then
+    cat "$ASM_FILE"
+    rm -f "$IMM_FILE" "$ASM_FILE" 
+    if [ $TEMP_BOOL = true ]; then 
+        rm -f "$SRC_FILE"
+    fi
+    exit 0
+fi
+
+# Compile LLVM IR to object file (for linking)
+llc -filetype=obj -o "$BASENAME.o" "$IMM_FILE"
+
+llc_status=$?
+
+# Check if llc succeeded
+if [ $llc_status -ne 0 ]; then
+    echo "LLVM compilation failed on the object file."
+    if [ $TEMP_BOOL = true ]; then
+        rm -f "$SRC_FILE"
+    fi
+    rm -f "$IMM_FILE"
+    rm -f "$ASM_FILE"
+    exit $llc_status
+fi
+
+
+
+# Link the assembly with the static library to produce the executable using g++
+echo "Linking with g++..."
+g++ -o "$BASENAME" "$BASENAME.o" "$SCRIPT_DIR/src/lib/alan_lib.a" -no-pie
+gpp_status=$?
+
+# Check if g++ succeeded
+if [ $gpp_status -ne 0 ]; then
+    echo "Linking failed."
+    if [ $TEMP_BOOL = true ]; then 
+        rm -f "$SRC_FILE"
+    fi
+    rm -f "$IMM_FILE" "$ASM_FILE" "$BASENAME.o"
+    exit $gpp_status
+fi
+
+# Cleanup after successful execution
+if [ $TEMP_BOOL = true ]; then 
+    rm -f "$SRC_FILE"
+fi
+
+echo "Executable $BASENAME created successfully!"
+exit 0

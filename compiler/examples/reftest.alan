@@ -1,0 +1,25 @@
+main() : proc
+    bsort (y : reference int []) : proc
+
+        j : int;
+
+    { -- bsort
+        y[4] = 1000;
+    } -- bsort
+
+    x    : int [16];
+    i    : int;
+{ -- main
+    i = 0;
+    while (i < 16){
+        x[i] = i;
+        i = i + 1;
+    }
+    bsort(x);
+    i = 0;
+    while (i < 16){
+        writeInteger(x[i]);
+        writeChar('\n');
+        i = i + 1;
+    }
+} -- main
